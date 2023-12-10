@@ -1,22 +1,33 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import pandas_datareader as data
+from pandas_datareader import data as pdr
 from keras.models import load_model
 import streamlit as st
-from datetime import date
+from datetime import datetime
+import yfinance as yf
+from sklearn.preprocessing import MinMaxScaler
+
+yf.pdr_override()
+st.title('Stock Trend prediction')
+
+start = st.date_input('Enter the starting date', datetime(2010, 11, 1))
+end = st.date_input('Enter the ending date', datetime(2022, 12, 12))
+
+start = start.strftime('%Y-%m-%d')
+end = end.strftime('%Y-%m-%d')
+
+stock_tickers = ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA', 'FB']
+user_input = st.selectbox('Select Stock Ticker', stock_tickers, index=0)
+st.write('You selected:', user_input)
+
+df=pdr.get_data_yahoo(user_input,start,end)
 
 
-start ='2013-01-01'
-end = date.today().strftime("%Y-%m-%d")
 
-st.title('Stock Price Prediction')
-
-user_input = st.text_input('Enter Stock Ticker','AAPL')
-df = data.DataReader(user_input, 'yahoo' , start, end)
 
 #Describing Data
-st.subheader('Data from 2013-2022')
+st.subheader(f'Data from Start Date to End Date of: {user_input}')
 st.write(df.describe()) 
 
 #Visualizations
@@ -48,11 +59,11 @@ st.pyplot(fig)
  #Splitting Data into Training and Testing
 
 
-data_training = pd.DataFrame(df['Close'][0:int(len(df)*0.70)])
-data_testing = pd.DataFrame(df['Close'][int(len(df)*0.70):int(len(df))])
+data_training = pd.DataFrame(df['Close'][0:int(len(df)*0.80)])
+data_testing = pd.DataFrame(df['Close'][int(len(df)*0.80):int(len(df))])
 
 
-from sklearn.preprocessing import MinMaxScaler
+
 scaler = MinMaxScaler(feature_range=(0,1)) 
 data_training_array = scaler.fit_transform(data_training)
 
@@ -69,11 +80,12 @@ for i in range(100, data_training_array.shape[0]):
 x_train,y_train=np.array(x_train),np.array(y_train)
 
 #Load my model
-model = load_model('keras_model.h5')
+model = load_model('E:/Projects/stock-price-prediction-using-ML-main/python 1/my_model.keras')
+
 
 #Testing Part
-past_100_days = data_training.tail(100)
-final_df = past_100_days.append(data_testing, ignore_index=True)
+past_100_days =  pd.DataFrame(data_training.tail(100))
+final_df = pd.concat([past_100_days, data_testing], ignore_index=True)
 input_data = scaler.fit_transform(final_df)
 
 
